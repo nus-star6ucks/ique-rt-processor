@@ -1,14 +1,32 @@
 spring:
   cloud:
     stream:
+      kafka:
+        streams:
+          binder:
+            deserializationExceptionHandler: logAndContinue
       function:
         bindings:
           recommendation-in-0: input
-          recommendation-out-0: output
       bindings:
         input:
+          #          consumer:
+          #            materializedAs: user-info
           destination: ${KAFKA_INPUT_TOPIC:user-info}
           group: group-1
           concurrency: 4
-        output:
-          destination: ${KAFKA_OUTPUT_TOPIC:recommendation-list}
+#        output:
+#          destination: ${KAFKA_OUTPUT_TOPIC:user-info}
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    bootstrap-servers: ${KAFKA_URL:localhost:9092}
+
+# Configuration for Spring Cloud OpenFeign 3.1.6
+feign:
+  client:
+    config:
+      rt-client:
+        url: ${DATABRICKS_URL:https://dbc-a6ea71e4-a3c0.cloud.databricks.com}
+        defaultRequestHeaders:
+          Authorization: ${TOKEN}

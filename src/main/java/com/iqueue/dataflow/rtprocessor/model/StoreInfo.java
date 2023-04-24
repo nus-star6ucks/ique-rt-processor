@@ -1,14 +1,14 @@
 package com.iqueue.dataflow.rtprocessor.model;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@RequiredArgsConstructor
+@NoArgsConstructor
 public class StoreInfo {
-    private Long storeId;
+    private String storeId;
     private Double longitude;
     private Double latitude;
 }
