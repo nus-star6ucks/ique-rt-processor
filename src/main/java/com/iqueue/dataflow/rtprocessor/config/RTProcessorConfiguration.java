@@ -44,10 +44,10 @@ public class RTProcessorConfiguration {
                               "{\n"
                                       + "    \"inputs\": {\n"
                                       + "        \"latitude\": [\n"
-                                      + "            40.748817\n"
+                                      + userInfo.getLatitude()
                                       + "        ],\n"
                                       + "        \"longitude\": [\n"
-                                      + "            -73.985428\n"
+                                      + userInfo.getLongitude()
                                       + "        ]\n"
                                       + "    }\n"
                                       + "}");

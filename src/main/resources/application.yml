@@ -20,7 +20,28 @@ spring:
   kafka:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-    bootstrap-servers: ${KAFKA_URL:localhost:9092}
+    properties:
+      basic:
+        # Required connection configs for Confluent Cloud Schema Registry
+        auth:
+          credentials:
+            source: USER_INFO
+          user:
+            info: '${API_KEY}:${API_SECRET}'
+      schema:
+        registry:
+          url: https://psrc-nx5kv.australia-southeast1.gcp.confluent.cloud
+      bootstrap:
+        servers: pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092
+      sasl:
+        jaas:
+          config: org.apache.kafka.common.security.plain.PlainLoginModule required username='${API_KEY}' password='${API_SECRET}';
+        mechanism: PLAIN
+      security:
+        protocol: SASL_SSL
+      session:
+        timeout:
+          ms: 45000
 
 # Configuration for Spring Cloud OpenFeign 3.1.6
 feign:
