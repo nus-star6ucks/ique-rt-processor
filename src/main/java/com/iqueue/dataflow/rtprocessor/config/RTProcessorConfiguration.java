@@ -1,5 +1,7 @@
 package com.iqueue.dataflow.rtprocessor.config;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,8 +10,10 @@ import com.iqueue.dataflow.rtprocessor.model.RecommendationDTO;
 import com.iqueue.dataflow.rtprocessor.model.StoreInfo;
 import com.iqueue.dataflow.rtprocessor.model.UserInfo;
 import com.iqueue.dataflow.rtprocessor.service.RTClient;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,40 +32,77 @@ import org.springframework.kafka.support.serializer.JsonSerde;
 @Configuration
 public class RTProcessorConfiguration {
 
-    private final RTClient rtClient;
-    private final ObjectMapper objectMapper;
-    @Bean
-    public Consumer<KStream<String, UserInfo>> recommendation() {
+  private final RTClient rtClient;
+  private final ObjectMapper objectMapper;
+
+  @Bean
+  public Consumer<KStream<String, UserInfo>> recommendation() {
 
     return userInfoKStream -> {
       userInfoKStream
           .mapValues(
               userInfo -> {
-                  log.info("user information: " + userInfo.getUserId());
-                  JsonNode inputNode;
-                  try {
-                      inputNode = objectMapper.readTree(
-                              "{\n"
-                                      + "    \"inputs\": {\n"
-                                      + "        \"latitude\": [\n"
-                                      + userInfo.getLatitude()
-                                      + "        ],\n"
-                                      + "        \"longitude\": [\n"
-                                      + userInfo.getLongitude()
-                                      + "        ]\n"
-                                      + "    }\n"
-                                      + "}");
-                  } catch (JsonProcessingException e) {
-                      throw new RuntimeException(e);
-                  }
-                  PredictionsDTO predictionsDTO = rtClient.recommendationList(inputNode);
-                  List<StoreInfo> storeInfoList = new ArrayList<>();
-                  predictionsDTO.getPredictions().forEach(e -> {
-                    StoreInfo storeInfo = new StoreInfo();
-                    storeInfo.setStoreId(e.get("business_id").toString());
-                    storeInfoList.add(storeInfo);
-                });
-                  return new RecommendationDTO(userInfo.getUserId(), storeInfoList);
+                log.info("user information: " + userInfo.getUserId());
+                JsonNode inputNode;
+                try {
+                  inputNode =
+                      objectMapper.readTree(
+                          "{\n"
+                              + "    \"inputs\": {\n"
+                              + "        \"user_id\": [\n"
+                              + "\""
+                              + userInfo.getUserId()
+                              + "\""
+                              + "        ],\n"
+                              + "        \"latitude\": [\n"
+                              + userInfo.getLatitude()
+                              + "        ],\n"
+                              + "        \"longitude\": [\n"
+                              + userInfo.getLongitude()
+                              + "        ]\n"
+                              + "    }\n"
+                              + "}");
+                } catch (JsonProcessingException e) {
+                  throw new RuntimeException(e);
+                }
+                CompletableFuture<PredictionsDTO> geoPredictionFuture =
+                    CompletableFuture.supplyAsync(() -> rtClient.geoRecommendationList(inputNode));
+                CompletableFuture<PredictionsDTO> alsPredictionFuture =
+                    CompletableFuture.supplyAsync(() -> rtClient.alsRecommendationList(inputNode));
+                CompletableFuture<RecommendationDTO> combineFutures =
+                    geoPredictionFuture.thenCombineAsync(
+                        alsPredictionFuture,
+                        (r1, r2) -> {
+                          double score1 = r1.getPredictions().size(),
+                              score2 = r1.getPredictions().size();
+                          final double factor = 0.7;
+                          Map<String, Double> result = new HashMap<>();
+                          for (String k : r1.getPredictions()) {
+                            result.put(k, score1 * factor);
+                            score1--;
+                          }
+                          for (String k : r2.getPredictions()) {
+                            result.merge(k, score2 * (1 - factor), Double::sum);
+                            score2 -=
+                                (double) r1.getPredictions().size() / r2.getPredictions().size();
+                          }
+                          List<StoreInfo> storeInfoList = new ArrayList<>();
+                          result.entrySet().stream()
+                              .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
+                              .limit(10)
+                              .forEachOrdered(
+                                  e -> {
+                                    StoreInfo storeInfo = new StoreInfo();
+                                    storeInfo.setStoreId(e.getKey());
+                                    storeInfoList.add(storeInfo);
+                                  });
+                          return new RecommendationDTO(userInfo.getUserId(), storeInfoList);
+                        });
+                try {
+                  return combineFutures.get(15, SECONDS);
+                } catch (InterruptedException | TimeoutException | ExecutionException e) {
+                  throw new RuntimeException(e);
+                }
               })
           .groupByKey(Grouped.valueSerde(new JsonSerde<>(RecommendationDTO.class)))
           .reduce(
@@ -71,5 +112,5 @@ public class RTProcessorConfiguration {
                   .withKeySerde(Serdes.String())
                   .withValueSerde(new JsonSerde<>(RecommendationDTO.class)));
     };
-    }
+  }
 }

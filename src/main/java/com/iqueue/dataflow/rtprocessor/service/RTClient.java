@@ -6,9 +6,12 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(value = "rt-client", url = "${feign.client.config.rt-client.url}", path = "/model/recommend_based_on_coordinates/1/invocations")
+@FeignClient(value = "rt-client", url = "${feign.client.config.rt-client.url}", path = "/model")
 public interface RTClient {
 
-    @PostMapping
-    PredictionsDTO recommendationList(@RequestBody JsonNode inputNode);
+    @PostMapping("/recommend_based_on_coordinates/4/invocations")
+    PredictionsDTO geoRecommendationList(@RequestBody JsonNode inputNode);
+
+    @PostMapping("/als_model/4/invocations")
+    PredictionsDTO alsRecommendationList(@RequestBody JsonNode inputNode);
 }

@@ -15,8 +15,8 @@ spring:
           destination: ${KAFKA_INPUT_TOPIC:user-info}
           group: group-1
           concurrency: 4
-#        output:
-#          destination: ${KAFKA_OUTPUT_TOPIC:user-info}
+  #        output:
+  #          destination: ${KAFKA_OUTPUT_TOPIC:user-info}
   kafka:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
