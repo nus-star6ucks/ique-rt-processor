@@ -99,7 +99,7 @@ public class RTProcessorConfiguration {
                           return new RecommendationDTO(userInfo.getUserId(), storeInfoList);
                         });
                 try {
-                  return combineFutures.get(15, SECONDS);
+                  return combineFutures.get(30, SECONDS);
                 } catch (InterruptedException | TimeoutException | ExecutionException e) {
                   throw new RuntimeException(e);
                 }
