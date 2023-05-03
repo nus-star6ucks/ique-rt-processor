@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(value = "rt-client", url = "${feign.client.config.rt-client.url}", path = "/model")
 public interface RTClient {
 
-    @PostMapping("/recommend_based_on_coordinates/4/invocations")
+    @PostMapping("/recommend_based_on_coordinates/1/invocations")
     PredictionsDTO geoRecommendationList(@RequestBody JsonNode inputNode);
 
-    @PostMapping("/als_model/4/invocations")
+    @PostMapping("/als_model/1/invocations")
     PredictionsDTO alsRecommendationList(@RequestBody JsonNode inputNode);
 }

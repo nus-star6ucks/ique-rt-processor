@@ -48,6 +48,6 @@ feign:
   client:
     config:
       rt-client:
-        url: ${DATABRICKS_URL:https://dbc-a6ea71e4-a3c0.cloud.databricks.com}
+        url: ${DATABRICKS_URL:https://dbc-8ed342e8-72c6.cloud.databricks.com}
         defaultRequestHeaders:
           Authorization: ${TOKEN}
