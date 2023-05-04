@@ -11,5 +11,4 @@ public class RtProcessorApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(RtProcessorApplication.class, args);
 	}
-
 }
