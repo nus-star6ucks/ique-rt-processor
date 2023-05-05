@@ -4,6 +4,9 @@ spring:
       kafka:
         streams:
           binder:
+            functions:
+              recommendation:
+                applicationId: ique
             deserializationExceptionHandler: logAndContinue
       function:
         bindings:
