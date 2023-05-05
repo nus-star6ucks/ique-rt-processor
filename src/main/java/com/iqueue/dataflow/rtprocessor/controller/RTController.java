@@ -27,6 +27,9 @@ public class RTController {
     public ResponseEntity<Object> getRecommendationList(@RequestBody UserInfo userInfo) {
         ReadOnlyKeyValueStore<String, RecommendationDTO> keyValueStore =
                 interactiveQueryService.getQueryableStore("recommendation", QueryableStoreTypes.keyValueStore());
+        if (keyValueStore == null) {
+            return ResponseEntity.notFound().build();
+        }
         RecommendationDTO recommendationDTO = keyValueStore.get(userInfo.getUserId());
         if (recommendationDTO == null) {
             return ResponseEntity.notFound().build();
